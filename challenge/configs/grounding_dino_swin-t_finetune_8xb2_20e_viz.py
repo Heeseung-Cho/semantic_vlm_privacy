@@ -3,7 +3,7 @@ from os import getenv
 _base_ = '../../third_party/LLM2Seg/configs/grounding_dino_swin-t_finetune_16xb2_1x_coco.py'
 
 dataset_type = 'CocoDataset'
-data_root = '/media/hcchen/backup/vizwiz/dataset/'
+data_root = getenv('VIZWIZ_DATA_ROOT', 'data/vizwiz/')
 
 
 class_name = ('local_newspaper', 'bank_statement', 'bills_or_receipt', 'business_card', 

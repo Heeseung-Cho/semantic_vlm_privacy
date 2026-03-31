@@ -1,20 +1,20 @@
 # privacy-challenge-code
 
-Curated repo containing our challenge-specific code, prompts, protocols, configs, and docs.
+Public code-only snapshot for the privacy challenge experiments.
 
-This repo intentionally excludes:
-- third-party code snapshots such as LLM2Seg
-- model weights and checkpoints
-- datasets
-- experiment result artifacts
-
-## Layout
-- `challenge/protocols`: Qwen-GDINO-SAM protocol code
-- `challenge/scripts`: data prep, training wrappers, evaluation, diagnostics
+Included:
+- `challenge/protocols`: protocol implementations
+- `challenge/scripts`: training, evaluation, and data-prep scripts
 - `challenge/prompts`: prompt templates
-- `challenge/configs`: our custom training config overrides
 - `challenge/folds`: split definitions
-- `challenge/*.md`: project docs
+- `challenge/configs`: custom config overrides
+
+Excluded:
+- datasets
+- model weights and checkpoints
+- experiment outputs
+- vendored third-party repositories
+- internal planning documents
 
 ## External dependencies
-This repo expects third-party code to be provided separately. See `THIRD_PARTY.md`.
+See `THIRD_PARTY.md` for the expected third-party repositories, checkpoints, and model downloads.
