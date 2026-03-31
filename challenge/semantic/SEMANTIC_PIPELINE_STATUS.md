@@ -70,8 +70,8 @@ A new no-train path has been added:
 
 Relevant files:
 
-- `/home/choheeseung/workspace/vlm-privacy/challenge/protocols/semantic_gdino_sam.py`
-- `/home/choheeseung/workspace/vlm-privacy/challenge/scripts/run_semantic_gdino_sam_pipeline.py`
+- `challenge/semantic/semantic_gdino_sam.py`
+- `challenge/semantic/run_semantic_gdino_sam_pipeline.py`
 
 ## What the semantic controller returns
 

@@ -2,30 +2,31 @@
 
 Public code-only snapshot for the privacy challenge experiments.
 
-## Main files
-- `challenge/protocols/semantic_gdino_sam.py`
+## Layout
+- `challenge/semantic`
   - main semantic pipeline module
-  - semantic controller
-  - proposal prompt refinement
-  - null policy
-  - G-DINO proposal collection
-  - optional reranking
-  - optional SAM
-- `challenge/scripts/run_semantic_gdino_sam_pipeline.py`
-  - main execution entrypoint
-- `challenge/protocols/qwen_gdino_sam.py`
-  - baseline protocol module
-- `challenge/scripts/eval_support_gdino_detector.py`
-  - detector-only support-set evaluator
-- `challenge/SEMANTIC_PIPELINE_STATUS.md`
-  - concise status note for the semantic pipeline
+  - main semantic pipeline entrypoint
+  - semantic pipeline status note
+- `challenge/baseline`
+  - baseline protocol and detector-only evaluator
+- `challenge/manual`
+  - Jupyter manual bbox annotation helper and notebook
+- `challenge/archive`
+  - older or secondary scripts kept out of the main public surface
+- `challenge/configs`
+  - config overrides
+- `challenge/prompts`
+  - prompt templates
+- `challenge/folds`
+  - split definitions
 
-## Included
-- code
-- prompts
-- folds
-- config overrides
-- minimal public docs
+## Main files
+- `challenge/semantic/semantic_gdino_sam.py`
+- `challenge/semantic/run_semantic_gdino_sam_pipeline.py`
+- `challenge/baseline/qwen_gdino_sam.py`
+- `challenge/baseline/eval_support_gdino_detector.py`
+- `challenge/manual/manual_bbox_annotation.py`
+- `challenge/manual/manual_bbox_annotation.ipynb`
 
 ## Excluded
 - datasets

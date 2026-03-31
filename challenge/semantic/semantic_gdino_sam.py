@@ -20,7 +20,7 @@ if str(LLM2SEG_DIR) not in sys.path:
 
 from call_vlm import SwiftVLMCaller
 from utils import preprocess_caption
-from challenge.protocols.qwen_gdino_sam import (
+from challenge.baseline.qwen_gdino_sam import (
     DetectionCandidate,
     GroundingDinoLocalizer,
     SamSegmenter,

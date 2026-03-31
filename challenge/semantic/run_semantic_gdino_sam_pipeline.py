@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from challenge.protocols.semantic_gdino_sam import (
+from challenge.semantic.semantic_gdino_sam import (
     GroundingDinoLocalizer,
     ProposalReranker,
     SamSegmenter,
