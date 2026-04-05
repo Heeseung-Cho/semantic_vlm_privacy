@@ -3,9 +3,7 @@ from __future__ import annotations
 import difflib
 import json
 import re
-import sys
 from dataclasses import dataclass
-import os
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -15,14 +13,9 @@ import numpy as np
 import torch
 from torchvision import ops
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-LLM2SEG_DIR = Path(os.environ.get('LLM2SEG_DIR', REPO_ROOT / 'third_party' / 'LLM2Seg'))
-if str(LLM2SEG_DIR) not in sys.path:
-    sys.path.insert(0, str(LLM2SEG_DIR))
-
-from call_vlm import DEFAULT_INSTRUCTION, SwiftVLMCaller  # noqa: E402
-from models import load_groundingdino_model, load_sam_model  # noqa: E402
-from utils import parse_response, preprocess_caption  # noqa: E402
+from common.vlm import DEFAULT_INSTRUCTION, SwiftVLMCaller
+from common.model_loaders import load_groundingdino_model, load_sam_model
+from common.text_utils import parse_response, preprocess_caption
 
 
 SUPPORT_QUERY_PROMPT = """

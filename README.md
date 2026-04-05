@@ -41,7 +41,6 @@ Standalone code snapshot for the current privacy challenge pipeline.
 
 ## How To Run
 All commands below assume:
-- `LLM2SEG_DIR` points to a working `LLM2Seg` checkout, or `third_party/LLM2Seg` exists under this repo
 - dataset paths and checkpoint paths are updated for the local machine
 
 ### 1. Detector-only baseline on support images
@@ -94,7 +93,7 @@ Notes:
 
 ## Notes
 - This repo is meant to run the current semantic-controller experiments standalone.
-- External third-party dependencies such as `LLM2Seg` are expected under `third_party/LLM2Seg` or via `LLM2SEG_DIR`.
+- This repo no longer requires an LLM2Seg checkout or runtime import path.
 - Datasets, checkpoints, and experiment outputs are excluded.
 
 ## External dependencies

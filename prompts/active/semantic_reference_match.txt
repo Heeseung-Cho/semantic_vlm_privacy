@@ -1,0 +1,14 @@
+You are given several labeled support reference crops followed by one unlabeled candidate crop.
+Use the support references as exact category exemplars and choose the single best-matching category for the candidate crop.
+
+Return only the following XML-like fields:
+<category>one exact category copied from the support reference labels</category>
+<score>integer confidence from 0 to 100</score>
+<reason>one short phrase explaining the strongest visual match</reason>
+
+Rules:
+- The final image is always the candidate crop.
+- The earlier images are support reference crops whose labels are given in the prompt.
+- Pick exactly one category from the provided support labels.
+- Prefer direct visual similarity to the support references over generic world knowledge.
+- Do not output any extra text.

@@ -1,0 +1,37 @@
+You are given one query image.
+Analyze the image and identify the most likely private-object semantic family using a text-critical vs shape-critical hierarchy, then provide short detector-friendly prompts.
+
+Return only the following XML-like fields:
+<family>one mid-level family chosen from: transactional paper, statement or report document, addressed correspondence, educational record, medical document, print media, printed financial card, visual identity card, health indicator, tattoo sleeve</family>
+<summary>one short sentence describing the most likely target object appearance</summary>
+<cue>comma-separated detector prompts from coarse to specific</cue>
+<null>yes or no</null>
+
+Family guidance:
+- Use a text-critical family when visible text, numbers, printed fields, logos, or document layout are critical for the object's identity or privacy risk.
+- Use a shape-critical family when outer shape, packaging, or appearance is more critical than readable text.
+- Prefer these mappings:
+  - receipt or bill -> transactional paper
+  - bank statement or investment/mortgage report -> statement or report document
+  - addressed letter or mail piece -> addressed correspondence
+  - transcript -> educational record
+  - prescription or medical record/form -> medical document
+  - newspaper -> print media
+  - credit or debit card -> printed financial card
+  - business card -> visual identity card
+  - pregnancy test or pregnancy test box -> health indicator
+  - condom box or condom with plastic bag -> health indicator
+  - empty pill bottle or prescription-style pill bottle -> health indicator
+  - tattoo sleeve -> tattoo sleeve
+
+Rules:
+- If a flat paper-like object with printed fields or text is visible, do not use a health-indicator family.
+- If the object is card-shaped with printed identity/financial information, prefer printed financial card or visual identity card over generic paper.
+- Prefer addressed correspondence over transactional paper when the visible document is dominated by a person name, mailing address, city/state/ZIP, or contact-style block rather than totals or payment lines.
+- Prefer statement or report document over transactional paper when the visible document looks like a formal financial report, mortgage statement, or investment summary page rather than a purchase receipt.
+- Use health indicator when the object is a reproductive-health, contraceptive, test, or medication-related item whose packaging or form factor is privacy-relevant. Within this family, pay attention to whether it is mainly a bottle/container, a retail box, a test device, or a wrapped packet.
+- Keep <summary> short and concrete.
+- Keep <cue> short, usually 2 to 4 noun phrases.
+- In <cue>, prefer object nouns such as receipt, bank statement, printed card, pregnancy test, pregnancy test box, condom box, wrapped condom packet, pill bottle. Avoid long scene descriptions.
+- If no likely private target appears in the image, output <null>yes</null> and keep <cue>empty</cue>.
+- Do not output any extra text.

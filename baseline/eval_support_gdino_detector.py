@@ -14,8 +14,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from challenge.protocols.overlay_utils import draw_gt_annotation, draw_xywh_box, load_display_image, xywh_to_xyxy
-from challenge.protocols.qwen_gdino_sam import GroundingDinoLocalizer
+from common.overlay_utils import draw_gt_annotation, draw_xywh_box, load_display_image, xywh_to_xyxy
+from baseline.qwen_gdino_sam import GroundingDinoLocalizer
 
 
 def parse_args() -> argparse.Namespace:

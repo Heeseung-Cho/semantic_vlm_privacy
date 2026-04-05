@@ -21,9 +21,9 @@ from common.overlay_utils import (
     draw_xyxy_box,
     load_display_image,
 )
-from challenge.protocols.semantic_gdino_sam import (
+from semantic.semantic_gdino_sam import (
     GroundingDinoLocalizer,
-    ProposalReranker,
+    ProposalCalibrator,
     SamSegmenter,
     SemanticController,
     SemanticGdinoSamPipeline,
@@ -32,7 +32,7 @@ from challenge.protocols.semantic_gdino_sam import (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Run the no-train semantic controller -> G-DINO -> VLM rerank -> SAM pipeline.')
+    parser = argparse.ArgumentParser(description='Run the no-train semantic controller -> G-DINO -> VLM category calibration -> optional SAM pipeline.')
     parser.add_argument('--query-dir', required=True)
     parser.add_argument('--json-path', required=True)
     parser.add_argument('--support-dir', default=None)
@@ -52,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--text-threshold', type=float, default=0.25)
     parser.add_argument('--proposal-nms-iou', type=float, default=0.6)
     parser.add_argument('--max-candidates', type=int, default=5)
+    parser.add_argument('--final-score-threshold', type=float, default=0.30)
     parser.add_argument('--limit', type=int, default=None)
     parser.add_argument('--image-id', type=int, default=None)
     parser.add_argument('--date-tag', default=None)
@@ -60,6 +61,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--save-vis', action='store_true')
     parser.add_argument('--disable-sam', action='store_true')
     parser.add_argument('--null-policy', choices=['strict', 'skip', 'ignore'], default='strict')
+    parser.add_argument('--use-hybrid-category-scores', action='store_true')
+    parser.add_argument('--hybrid-score-threshold', type=float, default=0.35)
+    parser.add_argument('--hybrid-margin', type=float, default=0.05)
+    parser.add_argument('--hybrid-iou-threshold', type=float, default=0.50)
+    parser.add_argument('--hybrid-exact-confidence-threshold', type=int, default=95)
+    parser.add_argument('--calibration-mode', choices=['legacy', 'reference_match'], default='legacy')
+    parser.add_argument('--classification-top-k', type=int, default=None)
+    parser.add_argument('--disable-document-text', action='store_true')
     return parser.parse_args()
 
 
@@ -88,12 +97,40 @@ def save_visualization(record: dict[str, Any], output_dir: Path, gt_ann: dict[st
         )
 
     for result in record.get('results', []):
-        draw_xywh_box(draw, result['bbox'], f"SEL {result['label_text']} {result['score']:.2f}", color='red', width=4)
+        score_text = result.get('final_score', result['score'])
+        draw_xywh_box(draw, result['bbox'], f"SEL {result['label_text']} {score_text:.2f}", color='red', width=4)
         draw_segmentation_polygons(draw, result.get('segmentation', []), color='cyan', width=2)
 
     vis_dir = output_dir / 'visualizations'
     vis_dir.mkdir(parents=True, exist_ok=True)
     image.save(vis_dir / f'{image_path.stem}_semantic_overlay.jpg')
+
+
+def build_submission_records(outputs: list[dict[str, Any]], category_name_to_id: dict[str, int]) -> list[dict[str, Any]]:
+    submission: list[dict[str, Any]] = []
+    for record in outputs:
+        image_id = record['image_id']
+        for result in record.get('results', []):
+            category_name = result.get('matched_category')
+            if not category_name:
+                continue
+            category_id = category_name_to_id.get(category_name)
+            if category_id is None:
+                continue
+            segmentation = result.get('segmentation', [])
+            bbox = result.get('bbox', [])
+            area = result.get('area')
+            if area is None and len(bbox) == 4:
+                area = float(bbox[2]) * float(bbox[3])
+            submission.append({
+                'image_id': image_id,
+                'score': float(result.get('score', result.get('final_score', 0.0))),
+                'category_id': category_id,
+                'area': float(area or 0.0),
+                'bbox': bbox,
+                'segmentation': segmentation,
+            })
+    return submission
 
 
 def main() -> None:
@@ -105,6 +142,8 @@ def main() -> None:
     images = dataset['images']
     annotations_by_image = {ann['image_id']: ann for ann in dataset.get('annotations', [])}
     categories_by_id = {cat['id']: cat['name'] for cat in dataset.get('categories', [])}
+    category_name_to_id = {cat['name'].replace('_', ' '): cat['id'] for cat in dataset.get('categories', [])}
+    category_names = list(category_name_to_id.keys())
     if args.image_id is not None:
         images = [img for img in images if img['id'] == args.image_id]
     if args.limit is not None:
@@ -124,15 +163,18 @@ def main() -> None:
         max_pixels=args.llm_max_pixels,
     )
     localizer = GroundingDinoLocalizer(args.config_path, args.checkpoint_path, device=args.device)
-    reranker = ProposalReranker(
+    calibrator = ProposalCalibrator(
         model_path=args.llm_model,
         max_new_tokens=128,
         decoding_mode=args.llm_decoding_mode,
         seed=args.llm_seed,
         max_pixels=args.llm_max_pixels,
+        calibration_mode=args.calibration_mode,
+        support_json_path=args.support_json,
+        support_dir=args.support_dir,
     )
-    segmenter = SamSegmenter(args.sam_checkpoint, device=args.device)
-    pipeline = SemanticGdinoSamPipeline(controller, localizer, reranker, segmenter)
+    segmenter = None if args.disable_sam else SamSegmenter(args.sam_checkpoint, device=args.device)
+    pipeline = SemanticGdinoSamPipeline(controller, localizer, calibrator, segmenter)
 
     outputs = []
     for image_info in images:
@@ -141,26 +183,44 @@ def main() -> None:
             support_image_paths=support_image_paths if args.controller_mode == 'support_query' else [],
             query_image_path=query_image_path,
             image_id=image_info['id'],
+            category_names=category_names,
+            category_name_to_id=category_name_to_id,
             box_threshold=args.box_threshold,
             text_threshold=args.text_threshold,
             proposal_nms_iou=args.proposal_nms_iou,
             max_candidates=args.max_candidates,
+            final_score_threshold=args.final_score_threshold,
             use_sam=not args.disable_sam,
             null_policy=args.null_policy,
+            use_hybrid_category_scores=args.use_hybrid_category_scores,
+            hybrid_score_threshold=args.hybrid_score_threshold,
+            hybrid_margin=args.hybrid_margin,
+            hybrid_iou_threshold=args.hybrid_iou_threshold,
+            hybrid_exact_confidence_threshold=args.hybrid_exact_confidence_threshold,
+            use_document_text=not args.disable_document_text,
+            classification_top_k=args.classification_top_k,
         )
         outputs.append(record)
+        top_hybrid = record.get('category_hybrid_signals', [])
+        hybrid_text = ''
+        if top_hybrid:
+            hybrid_text = f" hybrid_top={top_hybrid[0]['category']}:{top_hybrid[0]['score']:.2f}"
         print(
             f"Processed image_id={image_info['id']} family={record['semantic_family']} "
             f"null={record['null_likely']} proposals={len(record['proposal_candidates'])} selected={len(record['results'])}"
+            f"{hybrid_text}"
         )
         if args.save_vis:
             gt_ann = annotations_by_image.get(image_info['id'])
             gt_label = categories_by_id.get(gt_ann['category_id']) if gt_ann else None
             save_visualization(record, output_dir, gt_ann=gt_ann, gt_label=gt_label)
 
+    submission_records = build_submission_records(outputs, category_name_to_id)
     (output_dir / 'semantic_pipeline_results.json').write_text(json.dumps(outputs, ensure_ascii=False, indent=2))
+    (output_dir / 'query_submission.json').write_text(json.dumps(submission_records, ensure_ascii=False, indent=2))
     (output_dir / 'run_config.json').write_text(json.dumps(vars(args), ensure_ascii=False, indent=2))
     print(f"Saved semantic pipeline outputs to: {output_dir / 'semantic_pipeline_results.json'}")
+    print(f"Saved submission-format outputs to: {output_dir / 'query_submission.json'}")
 
 
 if __name__ == '__main__':
