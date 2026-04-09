@@ -281,26 +281,31 @@ class SamSegmenter:
             return []
         image = mmcv.imread(image_path, channel_order='rgb')
         image_np = np.array(image)
-        self.predictor.set_image(image_np)
         results: list[dict[str, Any]] = []
-        for det in detections:
-            xyxy = np.array(det.xyxy, dtype=np.float32)[None, :]
-            masks, _, _ = self.predictor.predict(
-                box=xyxy,
-                point_coords=None,
-                point_labels=None,
-                multimask_output=False,
-            )
-            x1, y1, x2, y2 = det.xyxy
-            results.append({
-                'image_id': image_id,
-                'score': det.score,
-                'category_id': det.category_id,
-                'bbox': [x1, y1, x2 - x1, y2 - y1],
-                'area': float((x2 - x1) * (y2 - y1)),
-                'segmentation': self._mask_to_coco_polygon(masks[0]),
-                'label_text': det.label_text,
-            })
+        try:
+            with torch.inference_mode():
+                self.predictor.set_image(image_np)
+                for det in detections:
+                    xyxy = np.array(det.xyxy, dtype=np.float32)[None, :]
+                    masks, _, _ = self.predictor.predict(
+                        box=xyxy,
+                        point_coords=None,
+                        point_labels=None,
+                        multimask_output=False,
+                    )
+                    x1, y1, x2, y2 = det.xyxy
+                    results.append({
+                        'image_id': image_id,
+                        'score': det.score,
+                        'category_id': det.category_id,
+                        'bbox': [x1, y1, x2 - x1, y2 - y1],
+                        'area': float((x2 - x1) * (y2 - y1)),
+                        'segmentation': self._mask_to_coco_polygon(masks[0]),
+                        'label_text': det.label_text,
+                    })
+        finally:
+            if hasattr(self.predictor, 'reset_image'):
+                self.predictor.reset_image()
         return results
 
 

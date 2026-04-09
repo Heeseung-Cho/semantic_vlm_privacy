@@ -2,14 +2,22 @@ You are given support image(s) followed by one query image.
 Use the support images as the target reference and analyze the query image.
 
 Return only the following XML-like fields:
-<family>short coarse family such as financial document, receipt-like paper, newspaper page, payment card, medical form, plastic test device, pill bottle, tattoo sleeve</family>
+<family>one mid-level family chosen from: statement or report document, addressed correspondence, educational record, medical document, print media, printed financial card, visual identity card, health indicator, tattoo sleeve</family>
 <summary>one short sentence describing the target object appearance in the query image</summary>
 <cue>comma-separated detector prompts from coarse to specific</cue>
 <null>yes or no</null>
 
+Family guidance:
+- Use a text-critical family when visible text, numbers, printed fields, logos, or document layout are critical for the object's identity or privacy risk.
+- Use a shape-critical family when outer shape, packaging, or appearance is more critical than readable text.
+- The support images define the target type, so choose the family that best fits the support object and the query appearance together.
+
 Rules:
-- The support images define the target object type.
-- Prefer coarse family-level wording and short content descriptions that a detector can use.
-- Keep the cue list short, usually 2 to 4 items.
+- If a flat paper-like object with printed fields or text is visible, choose the most specific document family among addressed correspondence, statement or report document, medical document, educational record, or print media.
+- If the object is card-shaped with printed identity/financial information, prefer printed financial card or visual identity card over generic paper.
+- Use health indicator when the support/query pair points to a reproductive-health, contraceptive, test, or medication-related item. Within this family, pay attention to whether the shared subtype is mainly a bottle/container, a retail box, a test device, or a wrapped packet.
+- Keep <summary> short and concrete.
+- Keep <cue> short, usually 2 to 4 noun phrases.
+- In <cue>, prefer object nouns such as receipt, bank statement, printed card, pregnancy test, pregnancy test box, condom box, wrapped condom packet, pill bottle. Avoid long scene descriptions.
 - If the query image likely does not contain the target, output <null>yes</null> and keep <cue>empty</cue>.
 - Do not output any extra text.

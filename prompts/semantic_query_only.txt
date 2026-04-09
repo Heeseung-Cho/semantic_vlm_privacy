@@ -1,14 +1,24 @@
 You are given one query image.
-Analyze the image and identify the most likely private-object family and short detector-friendly prompts.
+Identify one primary private-object family and broad detector-friendly cues.
 
 Return only the following XML-like fields:
-<family>short coarse family such as financial document, receipt-like paper, newspaper page, payment card, medical form, plastic test device, pill bottle, tattoo sleeve</family>
-<summary>one short sentence describing the most likely target object appearance</summary>
+<family>one mid-level family chosen from: statement or report document, addressed correspondence, educational record, medical document, print media, printed financial card, visual identity card, health indicator, tattoo sleeve</family>
+<summary>keep this minimal; one very short noun phrase or none</summary>
 <cue>comma-separated detector prompts from coarse to specific</cue>
 <null>yes or no</null>
 
 Rules:
-- Prefer coarse family-level wording and short content descriptions that a detector can use.
-- Keep the cue list short, usually 2 to 4 items.
+- Focus on three decisions only: family, cue, and null.
+- Choose exactly one primary family in <family>.
+- If multiple plausible private objects are visible, choose as <family> the object with the highest privacy risk; if risk is comparable, choose the most visually salient one.
+- Use <summary> only as a minimal placeholder. Do not add extra scene interpretation.
+- In <cue>, include all plausible private-object candidates visible in the image, even if they belong to different families.
+- Keep <cue> short, usually 2 to 4 noun phrases.
+- In <cue>, prefer detector-friendly object nouns such as receipt, bank statement, transcript, prescription form, newspaper, credit card, business card, pregnancy test, pregnancy test box, condom box, pill bottle, letter, envelope, tattoo sleeve.
+- Do not restrict <cue> to the primary family only.
+- Prefer concrete object names over vague attributes. Avoid terms such as blurry, white, black, small, large, background, object, or scene-only descriptions.
+- If a flat paper-like object with printed fields or text is visible, choose the most specific document family among addressed correspondence, statement or report document, medical document, educational record, or print media instead of using a generic paper concept.
+- If the object is card-shaped with printed identity or financial information, prefer printed financial card or visual identity card.
+- Never output null, none, empty, or unknown as a family value.
 - If no likely private target appears in the image, output <null>yes</null> and keep <cue>empty</cue>.
 - Do not output any extra text.

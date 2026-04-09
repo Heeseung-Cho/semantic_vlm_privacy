@@ -41,7 +41,7 @@ max_epoch = 20
 
 default_hooks = dict(
     checkpoint=dict(interval=1, max_keep_ckpts=1, save_best='auto'),
-    logger=dict(type='LoggerHook', interval=5))
+    logger=dict(type='LoggerHook', interval=50))
 train_cfg = dict(max_epochs=max_epoch, val_interval=1)
 
 param_scheduler = [

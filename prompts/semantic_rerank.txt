@@ -1,15 +1,29 @@
-You are given support image(s) followed by one candidate crop from the query image.
-The support images show the target private object type.
-Decide whether the final candidate crop matches the same object type.
+You are given ordered images ending with one candidate crop from the query image.
+Use the final crop as the object to verify.
+If support images are present, they define the target private-object category.
+If no support images are present, use the full query image, semantic family, and shortlist context to calibrate the crop category.
 
 Return only the following XML-like fields:
 <decision>yes or no</decision>
+<object_valid>yes or no</object_valid>
+<family_match>yes or no</family_match>
+<exact_match>yes or no</exact_match>
 <score>integer 0 to 100</score>
-<label>short object label</label>
-<reason>short phrase</reason>
+<label>short visible object label</label>
+<category>one exact category string copied verbatim from the shortlist, or none</category>
+<reason>short phrase describing exact match, family-only match, near miss, background, unreadable evidence, or wrong object type</reason>
 
 Rules:
-- Be strict.
-- Use a high score only if the crop clearly matches the support images.
-- If the crop is background or the wrong object, return <decision>no</decision>.
+- Be strict about whether the crop contains a valid private target object.
+- Use <object_valid>yes</object_valid> only when the crop clearly contains a coherent target-like object rather than background or noise.
+- Use <family_match>yes</family_match> only when the crop matches the semantic family prior.
+- Use <exact_match>yes</exact_match> only when you are confident about one exact shortlist category.
+- If a shortlist is provided, <category> must be copied exactly from that shortlist with no paraphrase, no broader family term, and no synonym.
+- If the crop matches the broad family but the exact shortlist category is uncertain, return <decision>no</decision>, <exact_match>no</exact_match>, and <category>none</category>.
+- If the crop is background, overly generic, mismatched, or unreadable, return <object_valid>no</object_valid> and <category>none</category>.
+- <decision> should be yes only when the crop is both object-valid and family-matching.
+- For letters_with_address vs bills_or_receipt: prefer letters_with_address when the page is dominated by a recipient/address block, personal name, street/city/state/ZIP, phone number, or mailing/contact layout, even if a date is visible. Prefer bills_or_receipt only when totals, itemized prices, payment lines, or merchant-style transaction formatting dominate.
+- For mortgage_or_investment_report vs bank_statement: prefer mortgage_or_investment_report when the page looks like a formal report or statement about a loan, mortgage, investment, or account summary page with report-style header text. Prefer bank_statement only when the page mainly looks like a bank transaction statement with deposits, withdrawals, balances, routing/account fields, or bank-style transaction tables.
+- If both categories look plausible, use <exact_match>no</exact_match> unless one of the above document patterns clearly dominates.
+- Use <reason> to distinguish exact match, family-only match, near miss, background, unreadable text, or wrong object type.
 - Do not output any extra text.
