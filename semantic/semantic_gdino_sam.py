@@ -40,7 +40,6 @@ CALIBRATION_PROMPT = _load_prompt('semantic_rerank.txt')
 DOCUMENT_TEXT_PROMPT = _load_prompt('semantic_document_text.txt')
 TRANSACTIONAL_TEXT_PROMPT = _load_prompt('semantic_transactional_text.txt')
 REFERENCE_MATCH_PROMPT = _load_prompt('semantic_reference_match.txt')
-CANDIDATE_FILTER_PROMPT = _load_prompt('semantic_candidate_filter.txt')
 
 NEGATIVE_VALUES = {'yes', 'true', '1'}
 LOW_SIGNAL_PROMPTS = {
@@ -178,7 +177,6 @@ class ProposalCalibrator:
         support_json_path: str | None = None,
         support_dir: str | None = None,
         reference_instruction: str | None = None,
-        candidate_filter_instruction: str | None = None,
         reference_source: str = 'crop',
         client: SwiftVLMCaller | None = None,
     ) -> None:
@@ -192,7 +190,6 @@ class ProposalCalibrator:
         self.mode = calibration_mode
         self.instruction = instruction or CALIBRATION_PROMPT
         self.reference_instruction = reference_instruction or REFERENCE_MATCH_PROMPT
-        self.candidate_filter_instruction = candidate_filter_instruction or CANDIDATE_FILTER_PROMPT
         self.reference_source = reference_source
         self.support_references: list[SupportReferenceCrop] = []
         if self.mode == 'reference_match' and support_json_path and support_dir:
@@ -246,37 +243,6 @@ class ProposalCalibrator:
             label=_extract_tag(raw_text, 'label').strip(),
             category=_extract_tag(raw_text, 'category').strip(),
             reason=_extract_tag(raw_text, 'reason').strip(),
-        )
-
-    def filter_candidate(
-        self,
-        support_image_paths: Sequence[str],
-        query_image_path: str,
-        candidate: DetectionCandidate,
-        semantic: SemanticCue,
-        allowed_categories: Sequence[str] | None = None,
-    ) -> CalibrationDecision:
-        crop_path = _save_candidate_crop(query_image_path, candidate.xyxy)
-        try:
-            instruction = _build_candidate_filter_instruction(
-                base_instruction=self.candidate_filter_instruction,
-                semantic=semantic,
-                candidate=candidate,
-                allowed_categories=allowed_categories or [],
-                has_support_images=bool(support_image_paths),
-            )
-            image_paths = [*map(str, support_image_paths), str(query_image_path), crop_path]
-            raw_text = self.client.generate_images(image_paths, instruction=instruction)
-        finally:
-            Path(crop_path).unlink(missing_ok=True)
-        keep = _extract_bool_tag(raw_text, 'keep')
-        return CalibrationDecision(
-            raw_text=raw_text,
-            decision=keep,
-            object_valid=keep,
-            family_match=keep,
-            exact_match=False,
-            score=100 if keep else 0,
         )
 
     def _score_candidate_by_reference(
@@ -1319,32 +1285,6 @@ def _build_calibration_instruction(
         f"Detector prompt set: {proposal_prompts}",
         f"Document text hint: {document_text_hint}",
         f"Visible text tokens: {document_text_tokens}",
-        f"Allowed categories: {allowed_text}",
-    ])
-
-
-def _build_candidate_filter_instruction(
-    base_instruction: str,
-    semantic: SemanticCue,
-    candidate: DetectionCandidate,
-    allowed_categories: Sequence[str],
-    has_support_images: bool,
-) -> str:
-    semantic_family = semantic.family or 'unknown'
-    proposal_prompts = ', '.join(semantic.proposal_prompts) if semantic.proposal_prompts else 'none'
-    allowed_text = ', '.join(allowed_categories) if allowed_categories else 'none'
-    mode_text = (
-        'The images are ordered as: support reference image(s), full query image, candidate crop.'
-        if has_support_images
-        else 'The images are ordered as: full query image, candidate crop.'
-    )
-    return "\n".join([
-        base_instruction,
-        "",
-        mode_text,
-        f"Semantic family prior: {semantic_family}",
-        f"Detector proposal text: {candidate.label_text}",
-        f"Detector prompt set: {proposal_prompts}",
         f"Allowed categories: {allowed_text}",
     ])
 

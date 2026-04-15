@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 
-DEFAULT_FAMILY_CONFIG_PATH = Path(__file__).resolve().parents[1] / 'config' / 'family_v1.json'
+DEFAULT_FAMILY_CONFIG_PATH = Path(__file__).resolve().parents[1] / 'config' / 'family_category_direct_v1.json'
 
 _ACTIVE_FAMILY_CONFIG_PATH = DEFAULT_FAMILY_CONFIG_PATH
 _ACTIVE_FAMILY_CONFIG: dict | None = None
