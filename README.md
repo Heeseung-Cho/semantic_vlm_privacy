@@ -71,6 +71,9 @@ Notes
 - This repo does not require an LLM2Seg checkout or runtime import path.
 - Datasets, checkpoints, and experiment outputs are excluded.
 - The current strongest no-train path is Stage-3 support-reference matching.
+- Method/leakage guard checklist:
+  - `METHOD_GUARD_CHECKLIST.md`
+  - includes wording templates for method section, README, and code design principles
 
 External Dependencies
 See THIRD_PARTY.md.
@@ -94,16 +97,17 @@ python semantic/run_stage3_calibration.py --json_path /path/to/dev_pseudo_label_
 - 기본 동작:
   - Stage 1: 이미지 단위로 하나의 route와 소수의 category 후보를 정리한다.
   - Stage 2: Stage-1 cue를 이용해 Grounding DINO proposal을 만든다.
-  - Stage 3: support reference 비교로 category를 확정하고 최종 bbox를 정리한다.
+  - Stage 3: support/reference 비교 또는 shortlist 내부 forced 선택으로 최종 category를 정리한다.
 - 문서 계열 처리 원칙:
-  - 문서 후보는 refine를 한 번 더 수행한다.
-  - refine 결과가 Stage-1 shortlist 밖으로 벗어나면 shortlist 내부 category만 유지한다.
+  - 현재 strongest observed 방향은 document Stage-3를 얇게 두는 것이다.
+  - 즉 Stage-1 shortlist를 그대로 강하게 쓰고, 문서 crop에서는 shortlist 내부 forced subtype selection만 수행한다.
+  - confidence tier, OCR, region/attribute reasoning, prompt-match fallback은 현재 decision path에서 제외하는 것이 더 안정적이었다.
   - 문서 route에서는 이미지별로 최종 문서 후보 1개만 남긴다.
 - 설계 의도:
   - Stage 1은 넓은 의미의 semantic prior를 제공한다.
   - Stage 2는 localization을 담당한다.
-  - Stage 3는 support 기반 category 정렬과 후처리를 담당한다.
-  - 즉, route/category prior, localization, exact-category verification을 분리한 구조다.
+  - Stage 3는 과도한 reasoning layer가 아니라 proposal-level category resolution과 후보 정리를 담당한다.
+  - 즉, route/category prior, localization, 얇은 exact-category resolution을 분리한 구조다.
 - 출력:
   - `output_root/stage1_semantic.json`
   - `output_root/stage2_detection_gdino_ft.json`
