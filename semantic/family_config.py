@@ -100,6 +100,26 @@ def get_family_categories(name: str) -> list[str]:
     return [str(category) for category in categories if str(category).strip()]
 
 
+def get_all_categories() -> list[str]:
+    categories: list[str] = []
+    for family_name in get_family_names():
+        for category in get_family_categories(family_name):
+            if category not in categories:
+                categories.append(category)
+    return categories
+
+
+def get_category_family(category_name: str) -> str:
+    normalized_target = _normalize_text(category_name)
+    if not normalized_target:
+        return ''
+    for family_name in get_family_names():
+        for category in get_family_categories(family_name):
+            if _normalize_text(category) == normalized_target:
+                return family_name
+    return ''
+
+
 def get_family_description(name: str) -> str | None:
     canonical_name = canonicalize_family_name(name)
     spec = get_active_family_config()['families'].get(canonical_name, {})
@@ -121,13 +141,36 @@ def render_family_description_block() -> str:
     return '\n'.join(lines)
 
 
+def render_category_description_block() -> str:
+    payload = get_active_family_config()
+    category_descriptions = payload.get('category_descriptions', {})
+    lines = []
+    for category in get_all_categories():
+        description = None
+        if isinstance(category_descriptions, dict):
+            description = category_descriptions.get(category)
+        if isinstance(description, str) and description.strip():
+            lines.append(f'- {category}: {description.strip()}')
+    return '\n'.join(lines)
+
+
 def render_prompt_with_family_config(prompt_text: str) -> str:
     family_list = ', '.join(get_family_names())
     family_descriptions = render_family_description_block()
+    category_list = ', '.join(get_all_categories())
+    category_descriptions = render_category_description_block()
     if '{{family_list}}' in prompt_text:
         prompt_text = prompt_text.replace('{{family_list}}', family_list)
+    if '{{route_list}}' in prompt_text:
+        prompt_text = prompt_text.replace('{{route_list}}', family_list)
     if '{{family_descriptions}}' in prompt_text:
         prompt_text = prompt_text.replace('{{family_descriptions}}', family_descriptions)
+    if '{{route_descriptions}}' in prompt_text:
+        prompt_text = prompt_text.replace('{{route_descriptions}}', family_descriptions)
+    if '{{category_list}}' in prompt_text:
+        prompt_text = prompt_text.replace('{{category_list}}', category_list)
+    if '{{category_descriptions}}' in prompt_text:
+        prompt_text = prompt_text.replace('{{category_descriptions}}', category_descriptions)
     pattern = re.compile(r'<family>one .*? chosen from:.*?</family>', flags=re.IGNORECASE | re.DOTALL)
     replacement = f'<family>one mid-level family chosen from: {family_list}</family>'
     if pattern.search(prompt_text):

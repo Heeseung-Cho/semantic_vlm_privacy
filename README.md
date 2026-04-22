@@ -2,6 +2,73 @@
 
 Standalone code snapshot for the current privacy challenge pipeline.
 
+## Reproducing BEST (mAP=0.7184 / AP50=0.7320 on dev-158)
+
+3-stage pipeline with Qwen3-VL-8B as the semantic model and fine-tuned Grounding-DINO Swin-T as the localizer.
+
+- **Stage-1** — `route4` family prior → VLM shortlist, then **FAM expansion** (swap the single VLM pick for the full family of categories)
+- **Stage-2** — G-DINO proposal generation with the FAM-expanded shortlist as noun phrases
+- **Stage-3** — **per-image joint keep+category** VLM call (numbered-bbox image) with OCR on document-routed images only
+
+### Prerequisites
+
+- Conda env `psi` (`source /home/choheeseung/miniconda3/etc/profile.d/conda.sh && conda activate psi`)
+- Data under `data/Biv-priv-seg/`: `dev_pseudo_label_3w_coco.json`, `query_images/`, `support_set.json`, `support_images/`
+- Fine-tuned G-DINO checkpoint: `LLM2Seg/checkpoints/groundingdino_swint_ogc_mmdet-822d7e9d.pth`
+- `PYTHONPATH` must include the repo root so `from semantic.*` / `from common.*` resolve (the ablation scripts handle this).
+
+### End-to-end chain
+
+The reference driver + per-stage shell scripts live in the experiment sandbox (`challenge/experiment/v2_repo_base/runs/ablation_route6/`). Each stage writes its output next to its script.
+
+```bash
+ABL=/home/choheeseung/workspace/vlm-privacy/challenge/experiment/v2_repo_base/runs/ablation_route6
+bash "${ABL}/run_chain_BEST.sh"
+# 1) stage1_route4_8B/run_stage1.sh        Stage-1 VLM routing (Qwen 8B, route4 families)
+# 2) stage1_route4_fam_8B/run_expand.sh    FAM expansion of Stage-1 shortlist
+# 3) stage2_route4_fam_8B/run_stage2.sh    G-DINO proposals
+# 4) L3_route4_fam_ocr_doc_8B/run_stage3.sh   VLM per-image classifier with OCR
+# Expected final line: [stage3] mAP=0.7184 AP50=0.7320
+```
+
+Total wall time on a single A6000 (after model cache warm): ~12–15 minutes.
+
+### Verify Stage-3 only (quick, ~6 minutes)
+
+Reuses the cached Stage-1/2 JSON outputs so only the VLM classifier re-runs:
+
+```bash
+bash /home/choheeseung/workspace/vlm-privacy/challenge/experiment/v2_repo_base/runs/ablation_route6/verify_BEST_refactored.sh
+# writes L3_refactor_verify/; last log line must match mAP=0.7184 AP50=0.7320 (deterministic decoding)
+```
+
+### Code entry points (Stage-3)
+
+- `semantic/run_stage3_classifier.py` — VLM classifier (per-image and per-candidate modes)
+- `scripts/expand_stage1_to_family.py` — Stage-1 FAM shortlist expansion
+- `prompts/active/stage3/stage3_per_image.txt` — per-image joint keep+category prompt
+- `prompts/active/stage3/stage3_per_candidate.txt` — per-candidate category prompt
+- `prompts/active/stage1/semantic_document_text.txt` — OCR prompt (document route only)
+- `config/family_category_route4_v1.json` — route4 family taxonomy
+
+Fixed hyperparameters for determinism:
+
+- Stage-1: `--llm_max_pixels 448`, deterministic decoding, `null_policy=skip`
+- Stage-2: G-DINO `box_thr=0.20 text_thr=0.10 nms_iou=0.50 max_candidates=5`
+- Stage-3: `--llm_max_pixels 3584 --max_new_tokens 1024 --proposal_score_threshold 0.40 --per_image_mode --document_ocr --ocr_doc_route_only`
+
+Taxonomy ablation (route4 / route6 / pii7 / direct, 8B, Stage-1/2 macro) is in [`challenge/ABLATION_PROGRESS.md`](/home/choheeseung/workspace/vlm-privacy/challenge/ABLATION_PROGRESS.md) — "8B Family Taxonomy Audit" section.
+
+---
+
+## Legacy: Previous dev-pseudo snapshot
+
+Prior best (pre-BEST) from 2026-04-19, retained for reference:
+
+- artifact: `/home/choheeseung/workspace/vlm-privacy/challenge/results/challenge_repo_dev_pseudo_run/20260419/4b_route4_diag_v1/stage3_minimal_forced`
+- metrics: `bbox_mAP=0.6309 AP50=0.6508 AP75=0.6392 AR100=0.7276`
+- Stage-3 policy: non-document `reference_match`, document `shortlist_forced` (OCR off, prompt-match fallback off, per-image top-1 on)
+
 Pipeline Summary
 1. Stage 1 semantic split
 2. Stage 2 Grounding DINO proposal generation
@@ -81,14 +148,14 @@ See THIRD_PARTY.md.
 Current Staged Workflow
 Run commands inside the `psi` conda environment.
 
-1) Stage 1 query-only direct category cues
-python semantic/run_stage1_semantic.py --query_dir /path/to/query_images --json_path /path/to/dev_pseudo_label_3w_coco.json --output_path /path/to/stage1_semantic.json --runtime_stats_jsonl /path/to/stage1_semantic.runtime.jsonl --llm_model Qwen/Qwen3-VL-4B-Instruct --device cuda --llm_max_new_tokens 160 --llm_decoding_mode deterministic --llm_max_pixels 448 --family_config config/family_category_direct_v1.json --query_prompt_path prompts/active/semantic_query_only.txt --null_policy ignore --save_raw_text
+1) Stage 1 route4 shortlist prior
+python semantic/run_stage1_semantic.py --query_dir /path/to/query_images --json_path /path/to/dev_pseudo_label_3w_coco.json --output_path /path/to/stage1_semantic.json --runtime_stats_jsonl /path/to/stage1_semantic.runtime.jsonl --llm_model Qwen/Qwen3-VL-4B-Instruct --device cuda --llm_max_new_tokens 180 --llm_decoding_mode deterministic --llm_max_pixels 448 --family_config config/family_category_route4_v1.json --query_prompt_path prompts/active/semantic_query_route4_v1.txt --null_policy skip --save_raw_text
 
-2) Stage 2 Grounding DINO candidates with null hard drop and cue provenance
-python semantic/run_stage2_detection.py --stage1_path /path/to/stage1_semantic.json --config_path configs/grounding_dino_swin-t_finetune_8xb2_20e_viz.py --checkpoint_path /path/to/groundingdino_swint_ogc_mmdet-822d7e9d.pth --output_path /path/to/stage2_detection_gdino_ft.json
+2) Stage 2 Grounding DINO candidates
+python semantic/run_stage2_detection.py --stage1_path /path/to/stage1_semantic.json --config_path configs/grounding_dino_swin-t_finetune_8xb2_20e_viz.py --checkpoint_path /path/to/groundingdino_swint_ogc_mmdet-822d7e9d.pth --output_path /path/to/stage2_detection_gdino_ft.json --box_threshold 0.20 --text_threshold 0.10 --proposal_nms_iou 0.50 --max_candidates 5
 
-3) Stage 3 Stage-1-category-shortlist reference match
-python semantic/run_stage3_calibration.py --json_path /path/to/dev_pseudo_label_3w_coco.json --stage1_path /path/to/stage1_semantic.json --stage2_path /path/to/stage2_detection_gdino_ft.json --output_dir /path/to/stage3_output --sam_checkpoint /path/to/sam_vit_h_4b8939.pth --llm_model Qwen/Qwen3-VL-4B-Instruct --device cuda --llm_decoding_mode deterministic --llm_max_pixels 448 --family_config config/family_category_direct_v1.json --calibration_mode reference_match --reference_source crop --support_dir /path/to/support_images --support_json /path/to/support_set.json --disable_sam --proposal_score_threshold 0.0 --classification_top_k 2 --skip_null_stage3
+3) Stage 3 thin document forced-shortlist + non-document reference match
+python semantic/run_stage3_calibration.py --json_path /path/to/dev_pseudo_label_3w_coco.json --stage1_path /path/to/stage1_semantic.json --stage2_path /path/to/stage2_detection_gdino_ft.json --output_dir /path/to/stage3_output --sam_checkpoint /path/to/sam_vit_h_4b8939.pth --llm_model Qwen/Qwen3-VL-4B-Instruct --device cuda --llm_decoding_mode deterministic --llm_max_pixels 448 --family_config config/family_category_route4_v1.json --calibration_mode reference_match --reference_source crop --support_dir /path/to/support_images --support_json /path/to/support_set.json --disable_sam --proposal_score_threshold 0.0 --skip_null_stage3 --save_calibration_raw_text --enable_document_refine --document_refine_prompt_path prompts/active/semantic_document_refine_route_v2.txt --document_refine_mode shortlist_forced --document_forced_refine_prompt_path prompts/active/semantic_document_refine_forced_shortlist.txt
 
 권장 실행 경로: Route4 Best Protocol
 - 전용 엔트리포인트:
@@ -103,6 +170,11 @@ python semantic/run_stage3_calibration.py --json_path /path/to/dev_pseudo_label_
   - 즉 Stage-1 shortlist를 그대로 강하게 쓰고, 문서 crop에서는 shortlist 내부 forced subtype selection만 수행한다.
   - confidence tier, OCR, region/attribute reasoning, prompt-match fallback은 현재 decision path에서 제외하는 것이 더 안정적이었다.
   - 문서 route에서는 이미지별로 최종 문서 후보 1개만 남긴다.
+- 현재 best dev-pseudo metric:
+  - `bbox_mAP = 0.6309`
+  - `bbox_AP50 = 0.6508`
+  - `bbox_AP75 = 0.6392`
+  - `bbox_AR100 = 0.7276`
 - 설계 의도:
   - Stage 1은 넓은 의미의 semantic prior를 제공한다.
   - Stage 2는 localization을 담당한다.

@@ -1,0 +1,11 @@
+You are given several labeled support reference crops followed by one unlabeled candidate crop.
+The candidate is from an image routed as document. Classify the candidate into one of the allowed document categories (provided later in the prompt).
+
+Return a single line containing exactly one XML-tagged category:
+`<category>NAME</category>` where NAME is one category from the allowed set, copied verbatim.
+
+Rules:
+- The final image is the candidate crop; earlier images are labeled support references.
+- Always choose exactly one category from the allowed set.
+- Use visible text fragments and document layout from the candidate, and use support references as comparison.
+- Do not output `unknown`, explanations, or any text outside the single tag.

@@ -1,0 +1,17 @@
+You are given one cropped candidate image.
+
+Pick the best-matching category for this crop from the allowed categories (provided below).
+
+Context from earlier pipeline stages:
+- Stage-1 visual cue (what the scene-level model noted): {{cue}}
+- Detector phrase that matched this region: {{label_text}}
+- Candidate categories (ranked most → least likely by Stage-1): {{shortlist_ranked}}
+
+Return exactly one line:
+<category>NAME</category>
+where NAME is one category from the allowed set, copied verbatim.
+
+Rules:
+- Always choose exactly one category from the allowed set. Do not abstain.
+- The ranked shortlist is a prior; trust it unless the crop clearly contradicts it.
+- Do not output `unknown`, `none`, explanations, or any text outside the single tag line.

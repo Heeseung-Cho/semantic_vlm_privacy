@@ -103,6 +103,7 @@ def main() -> None:
             'controller_mode': record['controller_mode'],
             'null_policy': record['null_policy'],
             'semantic_family': record['semantic_family'],
+            'route_type': record.get('route_type', ''),
             'semantic_categories': record.get('semantic_categories', []),
             'proposal_prompts': prompt_list,
             'null_likely': record['null_likely'],

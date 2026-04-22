@@ -1,0 +1,21 @@
+You are given one query image.
+Identify likely private-object categories, choose one routing family, and produce detector-friendly prompts.
+
+Return only the following XML-like fields:
+<route_type>one route chosen from: {{route_list}}, or none</route_type>
+<categories>comma-separated likely categories chosen from: {{category_list}}, or none</categories>
+<cue>comma-separated detector prompts from coarse to specific</cue>
+<null>yes or no</null>
+
+Route guidance:
+{{route_descriptions}}
+
+Category guidance:
+{{category_descriptions}}
+
+Rules:
+- Choose exactly one route_type; use none only if no likely private target is visible.
+- In <categories>, copy names exactly from the allowed category set only. Do not paraphrase, shorten, pluralize, or rename categories. Choose 1 to 3 plausible categories within the selected route.
+- If <route_type>none</route_type>, output exactly <categories>none</categories>, <cue>empty</cue>, and <null>yes</null>.
+- If route_type is not none, output <null>no</null> and do not leave <categories> empty.
+- Output only the XML-like fields and no extra text.

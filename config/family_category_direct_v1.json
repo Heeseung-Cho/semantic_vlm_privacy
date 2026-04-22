@@ -1,20 +1,20 @@
 {
   "families": {
-    "bills_or_receipt": {
+    "bills or receipt": {
       "categories": [
-        "bills_or_receipt"
+        "bills or receipt"
       ],
       "description": "Rectangular paper with text blocks and numbers, typically neatly arranged"
     },
-    "bank_statement": {
+    "bank statement": {
       "categories": [
-        "bank_statement"
+        "bank statement"
       ],
       "description": "Document with transaction tables, charts, and bank logo formatting"
     },
-    "letters_with_address": {
+    "letters with address": {
       "categories": [
-        "letters_with_address"
+        "letters with address"
       ],
       "description": "Folded document with typed address block and formal formatting"
     },
@@ -24,75 +24,75 @@
       ],
       "description": "Multi-column academic-style document with dense text and numeric entries"
     },
-    "mortgage_or_investment_report": {
+    "mortgage or investment report": {
       "categories": [
-        "mortgage_or_investment_report"
+        "mortgage or investment report"
       ],
       "description": "Formal document with bold headers and financial data tables"
     },
-    "medical_record_document": {
+    "medical record document": {
       "categories": [
-        "medical_record_document"
+        "medical record document"
       ],
       "description": "Multi-page document with medical charts or diagrams"
     },
-    "doctors_prescription": {
+    "doctors prescription": {
       "categories": [
-        "doctors_prescription"
+        "doctors prescription"
       ],
       "description": "Medical form with structured layout and identifying marks"
     },
-    "local_newspaper": {
+    "local newspaper": {
       "categories": [
-        "local_newspaper"
+        "local newspaper"
       ],
       "description": "Full-page print layout with headlines, columns, and image thumbnails"
     },
-    "credit_or_debit_card": {
+    "credit or debit card": {
       "categories": [
-        "credit_or_debit_card"
+        "credit or debit card"
       ],
       "description": "Rectangular plastic card, metallic or colorful, with embedded logo/text"
     },
-    "business_card": {
+    "business card": {
       "categories": [
-        "business_card"
+        "business card"
       ],
       "description": "Small rectangular card printed with contact information and logo"
     },
-    "pregnancy_test": {
+    "pregnancy test": {
       "categories": [
-        "pregnancy_test"
+        "pregnancy test"
       ],
       "description": "Slim white plastic device with result window"
     },
-    "pregnancy_test_box": {
+    "pregnancy test box": {
       "categories": [
-        "pregnancy_test_box"
+        "pregnancy test box"
       ],
       "description": "Vertical rectangular box with product branding and test device illustration"
     },
-    "condom_box": {
+    "condom box": {
       "categories": [
-        "condom_box"
+        "condom box"
       ],
       "description": "Small cardboard box, typically with commercial packaging design and small text"
     },
-    "condom_with_plastic_bag": {
+    "condom with plastic bag": {
       "categories": [
-        "condom_with_plastic_bag"
+        "condom with plastic bag"
       ],
       "description": "Small sealed transparent bag containing foil-wrapped item"
     },
-    "empty_pill_bottle": {
+    "empty pill bottle": {
       "categories": [
-        "empty_pill_bottle"
+        "empty pill bottle"
       ],
       "description": "Cylindrical container, typically white cap, translucent or opaque plastic material"
     },
-    "tattoo_sleeve": {
+    "tattoo sleeve": {
       "categories": [
-        "tattoo_sleeve"
+        "tattoo sleeve"
       ],
       "description": "Colored fabric or sleeve, often with flame or tribal patterns"
     }

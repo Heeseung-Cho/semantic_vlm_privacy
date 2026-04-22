@@ -1,5 +1,5 @@
 You are given several labeled support reference images followed by one unlabeled candidate crop.
-Pick the best-matching category for the final candidate crop.
+Pick the best-matching category for the final candidate crop from the allowed categories.
 
 Return only the following XML-like field:
 <category>one exact category copied from the support reference labels</category>
@@ -7,10 +7,14 @@ Return only the following XML-like field:
 Rules:
 - The final image is always the candidate crop.
 - The earlier images are labeled support reference images whose labels are given in the prompt.
-- Always pick exactly one category from the provided support labels.
+- Always pick exactly one category from the allowed categories.
+- If there is only one allowed category, output that category.
+- If there are two allowed categories, choose the closer one.
 - If the crop contains a real object or document but the exact category is uncertain, still pick the closest allowed category.
-- Do not reject the crop here. Candidate validity is handled separately.
-- Do not output `none`, `null`, or any rejection label.
+- Do not judge whether the crop is valid.
+- Do not reject the crop.
+- Do not output an empty category.
+- Do not output `none`, `null`, `background`, `unknown`, or any rejection label.
 - Use the support references only as comparison examples. Do not copy specific text, logos, names, account details, dates, or other support-only content unless they are directly visible in the candidate crop.
 - Base the decision on evidence that is directly visible in the candidate crop.
 - Do not output any extra text.

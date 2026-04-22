@@ -17,8 +17,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from common.vlm import SwiftVLMCaller, release_torch_runtime
 from common.vlm import _resolve_device_map
+from baseline.qwen_gdino_sam import load_support_image_paths
 from semantic.family_config import get_active_family_config_path, get_family_names, set_active_family_config
-from semantic.semantic_gdino_sam import SemanticController
+from semantic.semantic_gdino_sam import (
+    DOCUMENT_TEXT_PROMPT,
+    SemanticController,
+    _extract_tag,
+    _parse_semantic_cue,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,11 +40,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--llm_max_pixels', type=int, default=448)
     parser.add_argument('--family_config', '--family-config', dest='family_config', default=None)
     parser.add_argument('--query_prompt_path', default=None)
+    parser.add_argument('--support_query_prompt_path', default=None)
+    parser.add_argument('--support_json', default=None)
+    parser.add_argument('--support_dir', default=None)
+    parser.add_argument('--stage1_mode', choices=['query_only', 'support_query'], default='query_only')
     parser.add_argument('--null_policy', choices=['strict', 'skip', 'ignore'], default='ignore')
     parser.add_argument('--limit', type=int, default=None)
     parser.add_argument('--image_id', type=int, default=None)
     parser.add_argument('--runtime_stats_jsonl', default=None)
     parser.add_argument('--save_raw_text', action='store_true')
+    parser.add_argument('--save_global_caption', action='store_true')
+    parser.add_argument('--global_caption_prompt_path', default=None)
+    parser.add_argument(
+        '--enable_ocr_enrichment',
+        action='store_true',
+        help='Run a query-image OCR/text-hint pass before Stage 1 and append it to the Stage-1 prompt.',
+    )
     parser.add_argument('--cuda_cleanup_interval', type=int, default=0)
     return parser.parse_args()
 
@@ -51,6 +68,12 @@ def main() -> None:
     query_prompt_text = None
     if args.query_prompt_path:
         query_prompt_text = Path(args.query_prompt_path).read_text().strip()
+    support_query_prompt_text = None
+    if args.support_query_prompt_path:
+        support_query_prompt_text = Path(args.support_query_prompt_path).read_text().strip()
+    global_caption_prompt_text = None
+    if args.global_caption_prompt_path:
+        global_caption_prompt_text = Path(args.global_caption_prompt_path).read_text().strip()
 
     dataset = json.loads(Path(args.json_path).read_text())
     images = dataset['images']
@@ -74,8 +97,14 @@ def main() -> None:
         seed=args.llm_seed,
         max_pixels=args.llm_max_pixels,
         query_only_instruction=query_prompt_text,
+        instruction=support_query_prompt_text,
         client=shared_vlm,
     )
+    support_image_paths: list[str] = []
+    if args.stage1_mode == 'support_query':
+        if not args.support_json or not args.support_dir:
+            raise ValueError('support_query mode requires --support_json and --support_dir')
+        support_image_paths = load_support_image_paths(args.support_json, args.support_dir)
 
     request_config = getattr(shared_vlm, 'request_config', None)
     runtime_config = {
@@ -87,6 +116,7 @@ def main() -> None:
             'llm_seed': args.llm_seed,
             'llm_max_pixels': args.llm_max_pixels,
             'family_config': get_active_family_config_path(),
+            'stage1_mode': args.stage1_mode,
         },
         'vlm_caller': {
             'model_path': shared_vlm.model_path,
@@ -121,34 +151,86 @@ def main() -> None:
         for index, image_info in enumerate(progress, start=1):
             query_image_path = str((Path(args.query_dir) / image_info['file_name']).resolve())
             image_start = time.perf_counter()
-            if args.save_raw_text:
-                semantic, raw_text = controller.infer_query_only_with_raw(query_image_path)
+            ocr_hint = ''
+            ocr_text = ''
+            ocr_raw_text = None
+            if args.enable_ocr_enrichment:
+                if args.stage1_mode != 'query_only':
+                    raise ValueError('--enable_ocr_enrichment currently supports only --stage1_mode query_only')
+                ocr_raw_text = shared_vlm.generate(query_image_path, instruction=DOCUMENT_TEXT_PROMPT)
+                ocr_text = _extract_tag(ocr_raw_text, 'text').strip()
+                ocr_hint = _extract_tag(ocr_raw_text, 'document_hint').strip()
+
+            has_ocr = bool(ocr_text and ocr_text.lower() not in {'', 'none'})
+            if has_ocr:
+                ocr_context = (
+                    '\n\nOCR hint from image (use only if relevant to category selection):\n'
+                    f'Type hint: {ocr_hint}\n'
+                    f'Visible text: {ocr_text}'
+                )
+                enriched_instruction = controller.query_only_instruction + ocr_context
+                stage1_raw = shared_vlm.generate(query_image_path, instruction=enriched_instruction)
+                semantic = _parse_semantic_cue(stage1_raw)
+                raw_text = stage1_raw if args.save_raw_text else None
+            elif args.save_raw_text:
+                if args.stage1_mode == 'support_query':
+                    semantic, raw_text = controller.infer_with_raw(support_image_paths, query_image_path)
+                else:
+                    semantic, raw_text = controller.infer_query_only_with_raw(query_image_path)
             else:
-                semantic = controller.infer_query_only(query_image_path)
+                if args.stage1_mode == 'support_query':
+                    semantic = controller.infer(support_image_paths, query_image_path)
+                else:
+                    semantic = controller.infer_query_only(query_image_path)
                 raw_text = None
+            # Rule-based detector-channel enrichment: if OCR gave a coarse noun hint
+            # (e.g., "receipt", "newspaper", "business card"), append it to
+            # proposal_prompts regardless of whether the main VLM saw OCR context.
+            if args.enable_ocr_enrichment and ocr_hint and ocr_hint.lower() not in {'', 'none'}:
+                if ocr_hint not in semantic.proposal_prompts:
+                    semantic.proposal_prompts.append(ocr_hint)
+            global_caption = ''
+            global_caption_raw_text = None
+            if args.save_global_caption:
+                if not global_caption_prompt_text:
+                    raise ValueError('--save_global_caption requires --global_caption_prompt_path')
+                global_caption_raw_text = shared_vlm.generate(query_image_path, instruction=global_caption_prompt_text)
+                global_caption = _extract_caption_from_raw(global_caption_raw_text)
             if torch.cuda.is_available() and str(args.device).startswith('cuda'):
                 torch.cuda.synchronize(args.device)
             elapsed_sec = time.perf_counter() - image_start
             record = {
                 'image_id': image_info['id'],
                 'query_image_path': query_image_path,
-                'support_image_paths': [],
-                'controller_mode': 'query_only',
+                'support_image_paths': list(support_image_paths),
+                'controller_mode': args.stage1_mode,
                 'null_policy': args.null_policy,
                 'semantic_family': semantic.family,
+                'route_type': semantic.route_type,
+                'route_confidence': semantic.route_confidence,
                 'semantic_categories': semantic.categories,
                 'proposal_prompts': semantic.proposal_prompts,
                 'null_likely': semantic.null_likely,
             }
             if raw_text is not None:
                 record['semantic_raw_text'] = raw_text
+            if args.enable_ocr_enrichment:
+                record['ocr_text_hint'] = ocr_hint
+                record['ocr_text_tokens'] = ocr_text
+                if ocr_raw_text is not None:
+                    record['ocr_raw_text'] = ocr_raw_text
+            if args.save_global_caption:
+                record['global_caption'] = global_caption
+                record['global_caption_raw_text'] = global_caption_raw_text or ''
             runtime_stats = {
                 'image_index': index,
                 'image_id': image_info['id'],
                 'elapsed_sec': round(elapsed_sec, 3),
-                'controller_mode': 'query_only',
-                'support_image_count': 0,
+                'controller_mode': args.stage1_mode,
+                'support_image_count': len(support_image_paths),
                 'semantic_family': semantic.family,
+                'route_type': semantic.route_type,
+                'route_confidence': semantic.route_confidence,
                 'semantic_categories': semantic.categories,
                 'null_likely': semantic.null_likely,
                 'prompt_count': len(semantic.proposal_prompts),
@@ -156,6 +238,13 @@ def main() -> None:
             if raw_text is not None:
                 runtime_stats['raw_text_char_len'] = len(raw_text)
                 runtime_stats['raw_text_word_len'] = len(raw_text.split())
+            if args.enable_ocr_enrichment:
+                runtime_stats['ocr_enrichment_used'] = has_ocr
+                runtime_stats['ocr_text_hint'] = ocr_hint
+                runtime_stats['ocr_text_token_count'] = len([tok for tok in ocr_text.split(',') if tok.strip()]) if ocr_text else 0
+            if args.save_global_caption:
+                runtime_stats['global_caption'] = global_caption
+                runtime_stats['global_caption_char_len'] = len(global_caption)
             if torch.cuda.is_available() and str(args.device).startswith('cuda'):
                 runtime_stats['gpu_memory_allocated_mb'] = round(torch.cuda.memory_allocated(args.device) / (1024 ** 2), 1)
                 runtime_stats['gpu_memory_reserved_mb'] = round(torch.cuda.memory_reserved(args.device) / (1024 ** 2), 1)
@@ -164,15 +253,19 @@ def main() -> None:
             outputs.append(record)
             progress.set_postfix({
                 'image_id': image_info['id'],
+                'route': semantic.route_type or '-',
                 'categories': ','.join(semantic.categories[:2]) or semantic.family or '-',
                 'null': semantic.null_likely,
                 'sec': f'{elapsed_sec:.1f}',
             })
             message = (
                 f"Stage1 image_id={image_info['id']} categories={semantic.categories or [semantic.family]} "
+                f"route={semantic.route_type or '-'} route_conf={semantic.route_confidence or '-'} "
                 f"null={semantic.null_likely} prompts={len(semantic.proposal_prompts)} "
-                f"elapsed_sec={elapsed_sec:.1f} mode=query_only support_images=0"
+                f"elapsed_sec={elapsed_sec:.1f} mode={args.stage1_mode} support_images={len(support_image_paths)}"
             )
+            if args.save_global_caption and global_caption:
+                message += f" global_caption='{global_caption[:80]}'"
             if 'gpu_memory_reserved_mb' in runtime_stats:
                 message += (
                     f" gpu_alloc_mb={runtime_stats['gpu_memory_allocated_mb']:.1f}"
@@ -196,6 +289,17 @@ def main() -> None:
     }
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     tqdm.write(f'Saved Stage 1 outputs to: {output_path}')
+
+
+def _extract_caption_from_raw(raw_text: str) -> str:
+    start_tag = '<caption>'
+    end_tag = '</caption>'
+    lower = raw_text.lower()
+    start = lower.find(start_tag)
+    end = lower.find(end_tag)
+    if start != -1 and end != -1 and end > start:
+        return raw_text[start + len(start_tag):end].strip()
+    return raw_text.strip()
 
 
 if __name__ == '__main__':

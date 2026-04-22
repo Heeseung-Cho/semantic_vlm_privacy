@@ -1,0 +1,11 @@
+You are given several labeled support reference images followed by one unlabeled candidate crop.
+Pick the best-matching category for the final candidate crop from the allowed categories (provided later in the prompt).
+
+Return a single line containing exactly one XML-tagged category:
+`<category>NAME</category>` where NAME is one category from the allowed set, copied verbatim.
+
+Rules:
+- The final image is the candidate crop; earlier images are labeled support references.
+- Always choose exactly one category from the allowed set.
+- Base the decision on evidence directly visible in the candidate crop; use support references only as comparison.
+- Do not output `unknown`, `none`, rejection labels, explanations, or any text outside the single tag.
