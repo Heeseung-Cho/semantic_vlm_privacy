@@ -1,24 +1,24 @@
-You are given support image(s) followed by one query image.
-Use the support images as the target reference and analyze the query image.
+Input images in order (the model sees images in this exact order):
+{{support_block}}
+
+You are given one query image (the last one).
+Identify likely private-object categories, choose one routing family, and produce detector-friendly prompts.
 
 Return only the following XML-like fields:
-<family>one mid-level family chosen from: {{family_list}}</family>
-<summary>one short sentence describing the target object appearance in the query image</summary>
+<route_type>one route chosen from: {{route_list}}, or none</route_type>
+<categories>comma-separated likely categories chosen from: {{category_list}}, or none</categories>
 <cue>comma-separated detector prompts from coarse to specific</cue>
 <null>yes or no</null>
 
-Family guidance:
-- Use a text-critical family when visible text, numbers, printed fields, logos, or document layout are critical for the object's identity or privacy risk.
-- Use a shape-critical family when outer shape, packaging, or appearance is more critical than readable text.
-- The support images define the target type, so choose the family that best fits the support object and the query appearance together.
+Route guidance:
+{{route_descriptions}}
+
+Category guidance:
+{{category_descriptions}}
 
 Rules:
-- Use the most specific matching family from the allowed family set.
-- If the object is card-shaped with printed identity/financial information, choose the most specific matching family from the allowed family set instead of a generic paper family.
-- For paper-like targets, avoid generic fallback families when a narrower family fits the support/query pair.
-- For packaging or test-device targets, prefer the most specific matching family from the allowed family set.
-- Keep <summary> short and concrete.
-- Keep <cue> short, usually 2 to 4 noun phrases.
-- In <cue>, prefer object nouns such as receipt, bank statement, printed card, pregnancy test, pregnancy test box, condom box, wrapped condom packet, pill bottle. Avoid long scene descriptions.
-- If the query image likely does not contain the target, output <null>yes</null> and keep <cue>empty</cue>.
-- Do not output any extra text.
+- Choose exactly one route_type; use none only if no likely private target is visible.
+- In <categories>, copy names exactly from the allowed category set only. Do not paraphrase, shorten, pluralize, or rename categories. Choose 1 to 3 plausible categories within the selected route.
+- If <route_type>none</route_type>, output exactly <categories>none</categories>, <cue>empty</cue>, and <null>yes</null>.
+- If route_type is not none, output <null>no</null> and do not leave <categories> empty.
+- Output only the XML-like fields and no extra text.

@@ -18,7 +18,12 @@ if str(PROJECT_ROOT) not in sys.path:
 from common.vlm import SwiftVLMCaller, release_torch_runtime
 from common.vlm import _resolve_device_map
 from baseline.qwen_gdino_sam import load_support_image_paths
-from semantic.family_config import get_active_family_config_path, get_family_names, set_active_family_config
+from semantic.family_config import (
+    get_active_family_config_path,
+    get_category_family,
+    get_family_names,
+    set_active_family_config,
+)
 from semantic.semantic_gdino_sam import (
     DOCUMENT_TEXT_PROMPT,
     SemanticController,
@@ -71,6 +76,45 @@ def main() -> None:
     support_query_prompt_text = None
     if args.support_query_prompt_path:
         support_query_prompt_text = Path(args.support_query_prompt_path).read_text().strip()
+    support_image_paths: list[str] = []
+    if args.stage1_mode == 'support_query':
+        if not args.support_json or not args.support_dir:
+            raise ValueError('support_query mode requires --support_json and --support_dir')
+        support_image_paths = load_support_image_paths(args.support_json, args.support_dir)
+        if support_query_prompt_text and '{{support_block}}' in support_query_prompt_text:
+            support_payload = json.loads(Path(args.support_json).read_text())
+            cat_by_id = {c['id']: c['name'] for c in support_payload.get('categories', [])}
+            cat_by_image = {}
+            for ann in support_payload.get('annotations', []):
+                cat_by_image.setdefault(ann['image_id'], ann['category_id'])
+            per_image: list[tuple[int, str, str]] = []
+            fam_counts: dict[str, int] = {}
+            for i, img in enumerate(support_payload.get('images', []), start=1):
+                cat_raw = cat_by_id.get(cat_by_image.get(img['id']), 'unknown')
+                cat_display = cat_raw.replace('_', ' ')
+                fam = get_category_family(cat_display) or 'unknown'
+                per_image.append((i, fam, cat_display))
+                fam_counts[fam] = fam_counts.get(fam, 0) + 1
+            summary_lines = ['Support image distribution across families:']
+            for fam in get_family_names():
+                n = fam_counts.get(fam, 0)
+                summary_lines.append(f'  - {fam}: {n} support image(s)')
+            summary_lines.append(
+                'Note: the number of support examples per family is a property of the support set, '
+                'not a prior for the query. Choose route_type strictly based on the QUERY image.'
+            )
+            img_lines = []
+            for i, fam, cat_display in per_image:
+                img_lines.append(
+                    f'  Image {i} [family={fam}]: a labeled example of "{cat_display}" (support reference).'
+                )
+            img_lines.append(
+                f'  Image {len(support_image_paths) + 1} (the last image): the QUERY image. Analyze this one.'
+            )
+            support_block = '\n'.join(summary_lines + [''] + img_lines)
+            support_query_prompt_text = support_query_prompt_text.replace(
+                '{{support_block}}', support_block
+            )
     global_caption_prompt_text = None
     if args.global_caption_prompt_path:
         global_caption_prompt_text = Path(args.global_caption_prompt_path).read_text().strip()
@@ -100,12 +144,6 @@ def main() -> None:
         instruction=support_query_prompt_text,
         client=shared_vlm,
     )
-    support_image_paths: list[str] = []
-    if args.stage1_mode == 'support_query':
-        if not args.support_json or not args.support_dir:
-            raise ValueError('support_query mode requires --support_json and --support_dir')
-        support_image_paths = load_support_image_paths(args.support_json, args.support_dir)
-
     request_config = getattr(shared_vlm, 'request_config', None)
     runtime_config = {
         'parsed_args': {

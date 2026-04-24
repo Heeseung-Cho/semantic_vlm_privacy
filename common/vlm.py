@@ -198,6 +198,38 @@ class SwiftVLMCaller:
         release_torch_runtime()
         return text
 
+    def generate_few_shot(
+        self,
+        shots: Sequence[tuple],
+        query_image_path: str,
+        instruction: Optional[str] = None,
+    ) -> str:
+        """Multi-turn few-shot in-context prompting.
+
+        shots: list of (image_path, label_text) — each becomes one user/assistant
+               message pair. The VLM sees each image tied to its label through
+               conversation turns rather than positional text references.
+        query_image_path: final image to classify
+        instruction: text appended to the final user turn
+        """
+        prompt = instruction or DEFAULT_INSTRUCTION
+        messages = []
+        images: list = []
+        for img_path, label in shots:
+            messages.append({"role": "user", "content": "<image>"})
+            messages.append({"role": "assistant", "content": str(label)})
+            images.append(str(img_path))
+        messages.append({"role": "user", "content": f"<image>{prompt}"})
+        images.append(str(query_image_path))
+        infer_request = self._InferRequest(messages=messages, images=images)
+        with torch.inference_mode():
+            resp_list = self.engine.infer([infer_request], self.request_config)
+        text = resp_list[0].choices[0].message.content.strip()
+        del resp_list
+        del infer_request
+        release_torch_runtime()
+        return text
+
 
 def _resolve_device_map(device: Optional[str]) -> Optional[object]:
     if not device:

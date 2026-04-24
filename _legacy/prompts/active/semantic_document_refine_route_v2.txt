@@ -1,0 +1,26 @@
+You are given one cropped candidate from an image routed as document.
+Decide whether the crop contains a real document, then classify its subtype using visible text fragments and layout cues.
+
+Return only:
+<document_present>yes or no</document_present>
+<category>one exact category from: bills or receipt, bank statement, letters with address, transcript, mortgage or investment report, medical record document, doctors prescription, local newspaper, unknown</category>
+<evidence>comma-separated short visible keywords or layout cues, or none</evidence>
+
+Rules:
+- First decide whether a document is visibly present in the crop.
+- Use yes for paper-like documents, forms, statements, receipts, letters, transcripts, prescriptions, or newspapers, even if the text is only partially readable.
+- Use no for background, furniture, body parts, plastic devices, packaging, containers, or non-document objects.
+- If document_present is yes but subtype evidence is weak, output unknown instead of guessing.
+- Pick the category using visible text/layout evidence, not generic paper appearance.
+- Do not output full names, full addresses, account numbers, phone numbers, dates, or long numeric strings.
+- Evidence should be short diagnostic words or layout cues only.
+
+Category cues:
+- bills or receipt: total, subtotal, tax, item, qty, payment, cash, change, receipt, store, merchant, invoice, bill.
+- bank statement: account, balance, statement, transaction, deposit, withdrawal, routing, bank, debit, credit.
+- letters with address: recipient block, sender block, street/city/state/ZIP layout, dear, sincerely, formal letter.
+- transcript: transcript, course, grade, GPA, credit, semester, academic, school, student record.
+- mortgage or investment report: mortgage, loan, principal, interest, escrow, APR, portfolio, investment, rate.
+- medical record document: patient, medical record, diagnosis, treatment, hospital, clinic, physician, lab, chart.
+- doctors prescription: Rx, prescription, medication, dosage, mg, refill, pharmacy, prescriber.
+- local newspaper: headline, article columns, byline, section, newspaper name, masthead, puzzle.

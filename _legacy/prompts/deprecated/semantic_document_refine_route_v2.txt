@@ -1,0 +1,33 @@
+You are given one cropped candidate from an image routed as document.
+Decide whether the crop contains a real document, how confidently its subtype can be determined, and what privacy-critical region or attribute is most relevant.
+
+Return only:
+<document_confidence>high or low or none</document_confidence>
+<category>one exact category from: bills or receipt, bank statement, letters with address, transcript, mortgage or investment report, medical record document, doctors prescription, local newspaper, unknown</category>
+<evidence>comma-separated short visible keywords or layout cues, or none</evidence>
+<sensitive_region>one short region description or none</sensitive_region>
+<sensitive_attribute>one short privacy-critical attribute or none</sensitive_attribute>
+<reason>one short sentence explaining the subtype choice or abstention</reason>
+
+Rules:
+- Output `high` when a real document is visibly present and subtype evidence is strong enough to choose one exact document category.
+- Output `low` when a real paper-like document is visibly present but subtype evidence is too weak or partial to choose confidently.
+- Output `none` for background, furniture, body parts, plastic devices, packaging, containers, or non-document objects.
+- If confidence is `low`, output `<category>unknown</category>` instead of guessing.
+- If confidence is `none`, output `<category>unknown</category>`, `<evidence>none</evidence>`, `<sensitive_region>none</sensitive_region>`, and `<sensitive_attribute>none</sensitive_attribute>`.
+- Pick the category using visible text/layout evidence first, but if text is partial, use document structure and privacy-critical layout cues as well.
+- Do not output full names, full addresses, account numbers, phone numbers, dates, or long numeric strings.
+- Evidence should be short diagnostic words or layout cues only.
+- `sensitive_region` should point to the main privacy-critical area, such as address block, transaction table, course-grade table, prescription block, medical summary, or article header region.
+- `sensitive_attribute` should name the privacy-critical attribute, such as address, transaction history, account summary, grades, medication details, patient info, or newspaper identity cues.
+- Keep `reason` short and concrete.
+
+Category cues:
+- bills or receipt: total, subtotal, tax, item, qty, payment, cash, change, receipt, store, merchant, invoice, bill.
+- bank statement: account, balance, statement, transaction, deposit, withdrawal, routing, bank, debit, credit.
+- letters with address: recipient block, sender block, street/city/state/ZIP layout, dear, sincerely, formal letter.
+- transcript: transcript, course, grade, GPA, credit, semester, academic, school, student record.
+- mortgage or investment report: mortgage, loan, principal, interest, escrow, APR, portfolio, investment, rate.
+- medical record document: patient, medical record, diagnosis, treatment, hospital, clinic, physician, lab, chart.
+- doctors prescription: Rx, prescription, medication, dosage, mg, refill, pharmacy, prescriber.
+- local newspaper: headline, article columns, byline, section, newspaper name, masthead, puzzle.

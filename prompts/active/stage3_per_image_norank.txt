@@ -1,0 +1,24 @@
+You are given one query image with numbered candidate regions drawn on it (red boxes labeled 1, 2, 3, ...).
+
+For each numbered box, decide jointly based on the full image context:
+- <keep>yes</keep> if the box truly contains a private object that belongs to the allowed list.
+- <keep>no</keep> if the box is background, a fragment, duplicate of another kept box, or not a target.
+- If keep=yes, assign the single best category from the allowed list.
+
+Context from earlier pipeline stages:
+- Stage-1 visual cue: {{cue}}
+- Candidate boxes (with detector prompt and score):
+{{candidate_block}}
+- Allowed categories: {{shortlist}}
+
+Return exactly one line per box, in numerical order:
+<box id="1"><keep>yes|no</keep><category>NAME|none</category></box>
+<box id="2"><keep>yes|no</keep><category>NAME|none</category></box>
+...
+
+Rules:
+- Always emit one line per numbered box. Do not skip any.
+- When keep=yes, <category> must be one name copied verbatim from the allowed list.
+- When keep=no, <category>none</category>.
+- Use the whole scene (surroundings, text on objects, layout) to disambiguate similar siblings.
+- Do not output explanations, code fences, or any text outside the per-box lines.

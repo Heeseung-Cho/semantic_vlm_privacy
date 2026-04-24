@@ -1,0 +1,40 @@
+[2026-04-24 16:09:06,609] [INFO] [real_accelerator.py:254:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2026-04-24 16:09:07,835] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+/home/choheeseung/miniconda3/envs/psi/lib/python3.10/site-packages/mmdet/apis/det_inferencer.py:130: UserWarning: dataset_meta or class names are not saved in the checkpoint's meta data, use COCO classes by default.
+  warnings.warn(
+Loads checkpoint by local backend from path: /home/choheeseung/workspace/vlm-privacy/challenge/LLM2Seg/checkpoints/groundingdino_swint_ogc_mmdet-822d7e9d.pth
+The model and loaded state dict do not match exactly
+
+unexpected key in source state_dict: language_model.language_backbone.body.model.pooler.dense.weight, language_model.language_backbone.body.model.pooler.dense.bias, language_model.language_backbone.body.model.embeddings.position_ids
+
+missing keys in source state_dict: bbox_head.cls_branches.0.log_scale, bbox_head.cls_branches.1.log_scale, bbox_head.cls_branches.2.log_scale, bbox_head.cls_branches.3.log_scale, bbox_head.cls_branches.4.log_scale, bbox_head.cls_branches.5.log_scale, bbox_head.cls_branches.6.log_scale, dn_query_generator.label_embedding.weight
+
+04/24 16:09:10 - mmengine - WARNING - Failed to search registry with scope "mmdet" in the "function" registry tree. As a workaround, the current "function" registry in "mmengine" is used to build instance. This may cause unexpected failure when running the built modules. Please check whether "mmdet" is a correct scope, or whether the registry is initialized.
+/home/choheeseung/miniconda3/envs/psi/lib/python3.10/site-packages/mmengine/visualization/visualizer.py:196: UserWarning: Failed to add <class 'mmengine.visualization.vis_backend.LocalVisBackend'>, please provide the `save_dir` argument.
+  warnings.warn(f'Failed to add {vis_backend.__class__}, '
+stage2 detection:   0%|          | 0/1056 [00:00<?, ?image/s]stage2 detection:   0%|          | 0/1056 [00:00<?, ?image/s, image_id=110, selected=0]                                                                                       stage2 detection:   0%|          | 0/1056 [00:00<?, ?image/s, image_id=110, selected=0]/home/choheeseung/miniconda3/envs/psi/lib/python3.10/site-packages/torch/functional.py:554: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4322.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/choheeseung/miniconda3/envs/psi/lib/python3.10/site-packages/mmcv/cnn/bricks/transformer.py:524: UserWarning: position encoding of key ismissing in MultiheadAttention.
+  warnings.warn(f'position encoding of key is'
+Stage2 image_id=110 null=True candidates=0
+noun_phrases: ['tattoo sleeve']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['sleeve-like object']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['textile']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['red accent']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['wearable art']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+stage2 detection:   0%|          | 0/1056 [00:01<?, ?image/s, image_id=123, selected=2]                                                                                       stage2 detection:   0%|          | 0/1056 [00:01<?, ?image/s, image_id=123, selected=2]stage2 detection:   0%|          | 2/1056 [00:01<09:22,  1.87image/s, image_id=123, selected=2]Stage2 image_id=123 null=False candidates=2
+noun_phrases: ['bills', 'receipt']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['bank statement']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['letters', 'address']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['transcript']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   
+noun_phrases: ['mortgage', 'investment report']
+Inference ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   

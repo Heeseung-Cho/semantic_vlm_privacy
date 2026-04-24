@@ -45,14 +45,14 @@
     "mortgage or investment report": "Formal financial report with mortgage, loan, principal, interest, escrow, APR, portfolio, investment, or rate cues.",
     "medical record document": "Medical chart or record with patient, diagnosis, treatment, clinic, hospital, lab, chart, physician, or multi-page medical layout.",
     "doctors prescription": "Prescription form with Rx, medication, dosage, mg, refill, prescriber, pharmacy, or structured prescription fields.",
-    "local newspaper": "Newspaper page with headline, columns, section, byline, article blocks, puzzle, or newspaper masthead.",
+    "local newspaper": "Newspaper page with headline, columns, section, byline, article blocks, or newspaper masthead.",
     "credit or debit card": "Rectangular plastic payment card with chip, bank network logo, card branding, or embossed/card-number layout.",
     "business card": "Small rectangular contact card with name, title, company logo, phone, email, website, or contact layout.",
-    "pregnancy test": "Slim white plastic test device with result window, control/test line area, handle, or stick-like form.",
+    "pregnancy test": "Plastic test device with result window, control/test line area, handle, or stick-like form.",
     "pregnancy test box": "Retail box for pregnancy test with product branding, test-device illustration, count, or boxed packaging.",
     "condom box": "Small retail cardboard condom box with commercial packaging design and small product text.",
     "condom with plastic bag": "Small sealed transparent wrapper or plastic bag containing foil-wrapped condom-like item.",
-    "empty pill bottle": "Cylindrical plastic medicine bottle, often translucent or orange/white, usually with cap.",
-    "tattoo sleeve": "Colored sleeve or fabric with flame, tribal, tattoo-like, or patterned arm-cover design."
+    "empty pill bottle": "Cylindrical plastic medicine bottle, usually with cap.",
+    "tattoo sleeve": "Colored sleeve or fabric with tattoo-like or patterned arm-cover design."
   }
 }

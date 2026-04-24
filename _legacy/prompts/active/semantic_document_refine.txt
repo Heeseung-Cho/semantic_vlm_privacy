@@ -1,0 +1,22 @@
+You are given one cropped image of a paper-like document candidate.
+Classify the document subtype using only clearly visible text or layout cues.
+
+Return only the following XML-like fields:
+<category>one exact category from: bills or receipt, bank statement, letters with address, transcript, mortgage or investment report, medical record document, doctors prescription, local newspaper, unknown</category>
+<evidence>comma-separated short visible words or layout cues, or none</evidence>
+
+Rules:
+- Do not transcribe full private text.
+- Use only short diagnostic words, headers, or layout cues that are clearly visible.
+- Do not output names, full addresses, account numbers, phone numbers, dates, or long numeric strings.
+- If text is unreadable but the layout is clearly a newspaper, letter, receipt, statement, transcript, prescription, report, or medical record, use layout cues.
+- If there is not enough evidence to distinguish the subtype, output unknown.
+- Prefer bank statement when visible cues include account, balance, statement, transaction, deposit, withdrawal, routing, bank, debit, credit.
+- Prefer bills or receipt when visible cues include total, subtotal, tax, item, qty, payment, cash, change, receipt, store, merchant.
+- Prefer doctors prescription when visible cues include rx, prescription, prescribed, dosage, mg, refill, pharmacy, medication, prescriber.
+- Prefer medical record document when visible cues include patient, medical record, diagnosis, treatment, hospital, clinic, physician, lab, chart.
+- Prefer mortgage or investment report when visible cues include mortgage, loan, interest, principal, escrow, investment, portfolio, rate, APR.
+- Prefer transcript when visible cues include transcript, course, grade, GPA, credit, semester, academic, student.
+- Prefer letters with address when visible cues include recipient/sender block, street, city/state/ZIP layout, dear, sincerely, mailing address.
+- Prefer local newspaper when visible cues include headline, article columns, newspaper name, section, byline.
+- Do not output any extra text.

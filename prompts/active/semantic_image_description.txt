@@ -1,0 +1,9 @@
+Describe what you see in this image in one or two short sentences.
+
+Focus on the visible objects — their general shape, material, and layout — and mention any short words, numbers, or phrases that are clearly readable on them. Do not guess or invent text that is not actually visible.
+
+Rules:
+- Be factual and concise; one or two sentences total.
+- Do not name a specific benchmark or challenge category.
+- Do not hallucinate unreadable text.
+- Return only the description, no tags or extra formatting.

@@ -1,0 +1,48 @@
+{
+  "families": {
+    "document": {
+      "categories": [
+        "bills or receipt",
+        "bank statement",
+        "letters with address",
+        "transcript",
+        "mortgage or investment report",
+        "medical record document",
+        "doctors prescription",
+        "local newspaper"
+      ],
+      "description": "Paper-like or print-layout object whose exact private category depends on visible text, forms, tables, columns, addresses, medical fields, financial terms, or document layout."
+    },
+    "non document": {
+      "categories": [
+        "credit or debit card",
+        "business card",
+        "pregnancy test",
+        "pregnancy test box",
+        "condom box",
+        "condom with plastic bag",
+        "empty pill bottle",
+        "tattoo sleeve"
+      ],
+      "description": "Physical object whose identity is mostly determined by shape, packaging, material, object layout, or visual appearance rather than reading document text."
+    }
+  },
+  "category_descriptions": {
+    "bills or receipt": "Rectangular paper with totals, item lines, prices, payment fields, receipt or bill formatting.",
+    "bank statement": "Financial statement with account, balance, transaction, deposit, withdrawal, bank logo, or statement-period cues.",
+    "letters with address": "Letter or envelope-like document with recipient/sender address block, salutation, formal paragraphs, or mailing layout.",
+    "transcript": "Academic record with course, grade, GPA, credit, semester, school, or transcript table layout.",
+    "mortgage or investment report": "Formal financial report with mortgage, loan, principal, interest, escrow, APR, portfolio, investment, or rate cues.",
+    "medical record document": "Medical chart or record with patient, diagnosis, treatment, clinic, hospital, lab, chart, physician, or multi-page medical layout.",
+    "doctors prescription": "Prescription form with Rx, medication, dosage, mg, refill, prescriber, pharmacy, or structured prescription fields.",
+    "local newspaper": "Newspaper page with headline, columns, section, byline, article blocks, puzzle, or newspaper masthead.",
+    "credit or debit card": "Rectangular plastic payment card with chip, bank network logo, card branding, or embossed/card-number layout.",
+    "business card": "Small rectangular contact card with name, title, company logo, phone, email, website, or contact layout.",
+    "pregnancy test": "Slim white plastic test device with result window, control/test line area, handle, or stick-like form.",
+    "pregnancy test box": "Retail box for pregnancy test with product branding, test-device illustration, count, or boxed packaging.",
+    "condom box": "Small retail cardboard condom box with commercial packaging design and small product text.",
+    "condom with plastic bag": "Small sealed transparent wrapper or plastic bag containing foil-wrapped condom-like item.",
+    "empty pill bottle": "Cylindrical plastic medicine bottle, often translucent or orange/white, usually with cap.",
+    "tattoo sleeve": "Colored sleeve or fabric with flame, tribal, tattoo-like, or patterned arm-cover design."
+  }
+}

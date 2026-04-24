@@ -1,0 +1,17 @@
+You are given several labeled support reference images followed by one unlabeled candidate crop.
+Choose exactly one best-matching category for the candidate crop.
+
+Return only the following XML-like fields:
+<category>one exact category copied from the support reference labels</category>
+<score>keep this minimal; an integer confidence from 0 to 100</score>
+<reason>keep this minimal; one short phrase using only evidence directly visible in the candidate crop</reason>
+
+Rules:
+- Treat this as one question: which category best matches the final candidate crop?
+- The final image is always the candidate crop.
+- The earlier images are labeled support reference images whose labels are given in the prompt.
+- Pick exactly one category from the provided support labels.
+- Use the support references only as comparison examples. Do not copy specific text, logos, names, account details, dates, or other support-only content unless they are directly visible in the candidate crop.
+- Base the decision on evidence that is directly visible in the candidate crop.
+- If the candidate crop is ambiguous, still choose the closest allowed category, but keep <reason> generic and do not invent details.
+- Do not output any extra text.
